@@ -3,15 +3,82 @@
     <head>
         <meta charset="utf-8">
         <title>Private chat</title>
+        <!--Import Google Icon Font-->
+        <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+        <!--Let browser know website is optimized for mobile-->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <!-- Compiled and minified CSS -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.2/css/materialize.min.css">
+        <!-- Compiled and minified JavaScript -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.2/js/materialize.min.js"></script>
     </head>
+
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+
     <script>
         $(function() {
             var socket = io();
+
+            var chatForm = $('#chatForm');
+            var chatMessage = $('#chatMessage');
+            var displayChat = $('#displayChat');
+
+            socket.emit('INITIAL_SETUP', prompt('friendUserID'), prompt('myUserID'));
+            chatForm.submit(function(e) {
+                e.preventDefault();
+                var message = chatMessage.val();
+                socket.emit('SEND_MESSAGE_CLIENT', message);
+                chatMessage.val('');
+            });
+
+            socket.on('FORWARD_MESSAGE_SERVER', function(msg, userName) {
+                displayChat.append('<li class="collection-item"><strong>'+userName+': </strong>'+msg+'</li>')
+            });
         });
     </script>
     <body>
+        <style media="screen">
+            body {
+                display: flex;
+                min-height: 100vh;
+                flex-direction: column;
+            }
 
+            main {
+                flex: 1 0 auto;
+            }
+        </style>
+        <nav>
+            <div class="nav-wrapper">
+                <a href="#!" class="brand-logo"><i class="material-icons">cloud</i>userName</a>
+            </div>
+        </nav>
+
+        <main class="">
+            <ul class="collection" id="displayChat">
+                <li class="collection-item">hello</li>
+                <li class="collection-item">Alvin</li>
+                <li class="collection-item">Alvin</li>
+                <li class="collection-item">Alvin</li>
+            </ul>
+        </main>
+
+        <footer class="page-footer red lighten-5">
+            <div class="row">
+                <form id="chatForm">
+                    <div class="input-field col l9 s9">
+                        <!-- <i class="material-icons prefix">textsms</i> -->
+                        <input id="chatMessage" autocomplete="off" type="text">
+                        <label for="chatMessage">Message</label>
+                    </div>
+                    <div class="input-field col l2 s2">
+                        <button class="btn-floating btn-large waves-effect waves-light red" type="submit" name="action">
+                            <i class="material-icons">send</i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </footer>
     </body>
 </html>
