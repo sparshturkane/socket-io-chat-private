@@ -25,6 +25,13 @@
             var displayChat = $('#displayChat');
 
             socket.emit('INITIAL_SETUP', prompt('friendUserID'), prompt('myUserID'));
+
+            socket.on('INITIAL_DETAILS', function(data) {
+                console.log(data);
+                $('#friendUserName').empty();
+                $('#friendUserName').append(data.friendUserName);
+            });
+
             chatForm.submit(function(e) {
                 e.preventDefault();
                 var message = chatMessage.val();
@@ -51,16 +58,19 @@
         </style>
         <nav>
             <div class="nav-wrapper">
-                <a href="#!" class="brand-logo"><i class="material-icons">cloud</i>userName</a>
+                <a href="#!" class="brand-logo">
+                    <i class="material-icons">
+                        cloud
+                    </i>
+                    <span id="friendUserName">
+                        username
+                    </span>
+                </a>
             </div>
         </nav>
 
         <main class="">
             <ul class="collection" id="displayChat">
-                <li class="collection-item">hello</li>
-                <li class="collection-item">Alvin</li>
-                <li class="collection-item">Alvin</li>
-                <li class="collection-item">Alvin</li>
             </ul>
         </main>
 
