@@ -23,6 +23,8 @@
             var chatForm = $('#chatForm');
             var chatMessage = $('#chatMessage');
             var displayChat = $('#displayChat');
+            var currentUserName;
+            var userChatStatus = $('#userChatStatus');
 
             socket.emit('INITIAL_SETUP', prompt('friendUserID'), prompt('myUserID'));
 
@@ -30,6 +32,7 @@
                 console.log(data);
                 $('#friendUserName').empty();
                 $('#friendUserName').append(data.friendUserName);
+                currentUserName = data.currentUserName;
             });
 
             chatForm.submit(function(e) {
@@ -37,12 +40,37 @@
                 var message = chatMessage.val();
                 socket.emit('SEND_MESSAGE_CLIENT', message);
                 chatMessage.val('');
+                $('#userChatStatus').empty();
             });
 
             socket.on('FORWARD_MESSAGE_SERVER', function(msg, userName) {
                 displayChat.append('<li class="collection-item"><strong>'+userName+': </strong>'+msg+'</li>')
             });
+
+            // function handleSendMessageKeyPress(){
+            //     console.log('typing');
+            // };
+
+            // emmiting when client types
+            chatMessage.keypress(function() {
+                // console.log("key pressed");
+                socket.emit('FRIEND_TYPING');
+            });
+
+            // receiving when friend types from server
+            socket.on('FRIEND_TYPING_CLIENT',function() {
+                $('#userChatStatus').empty();
+                $('#userChatStatus').append('typing...');
+            });
+
+
         });
+
+
+        // clear the typing message
+        setInterval(function() {
+            $('#userChatStatus').empty();
+        }, 5000 );
     </script>
     <body>
         <style media="screen">
@@ -55,15 +83,32 @@
             main {
                 flex: 1 0 auto;
             }
+
+            .userName{
+                font-size: 20px;
+            }
+
+            .userStatus{
+                font-size: 10px;
+            }
+
+            .userChatStatus{
+                font-size: 10px;
+            }
         </style>
         <nav>
             <div class="nav-wrapper">
                 <a href="#!" class="brand-logo">
                     <i class="material-icons">
-                        cloud
+                        person_pin
                     </i>
-                    <span id="friendUserName">
+                    <span id="friendUserName" class="userName">
                         username
+                    </span>
+                    <span id="userConnectionStatus" class="userStatus">
+                        online
+                    </span>
+                    <span id="userChatStatus" class="userChatStatus">
                     </span>
                 </a>
             </div>

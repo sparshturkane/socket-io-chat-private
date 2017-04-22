@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>javascriptBasics</title>
+    </head>
+    <body>
+        check console
+        <script>
+            // 1. basic
+            console.log(myFunction(12,3));
+            function myFunction(a, b) {
+                return a * b;
+            }
+
+            // 2. function as a expression
+            // console.log(x(5,6)); // no hoisting so will not work
+            var x = function(a, b) {
+                return a + b;
+            };
+            console.log(x(5,6));
+
+            // 3. hoisting just word of calling functions before declaration
+            // expressions cannod do hoisting
+
+            // 4. call stacks
+            function greet ( who ) {
+                console . log (" Hello " + who ) ;
+            }
+            greet (" Harry ") ;
+            console . log (" Bye ") ;
+
+            // 5. Closure
+            function celebrityName (firstName) {
+                var nameIntro = "This celebrity is ";
+                // this inner function has access to the outer function's variables, including the parameter
+                function lastName (theLastName) {
+                    return nameIntro + firstName + " " + theLastName;
+                }
+                return lastName;
+            }
+            var mjName = celebrityName ("Michael"); //  At this juncture, the celebrityName outer function has returned.
+            console.log(mjName);
+            // The closure (lastName) is called here after the outer function has returned above
+            // Yet, the closure still has access to the outer function's variables and parameter
+            console.log(mjName ("Jackson")); // This celebrity is Michael Jackson
+
+            // 6. call back function classical function
+            var studentName = ['ram','seeta','kabir'];
+            studentName.forEach(function(value, index) {
+                console.log(value);
+            });
+        </script>
+    </body>
+</html>
