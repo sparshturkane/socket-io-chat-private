@@ -40,11 +40,11 @@
                 var message = chatMessage.val();
                 socket.emit('SEND_MESSAGE_CLIENT', message);
                 chatMessage.val('');
-                $('#userChatStatus').empty();
             });
 
-            socket.on('FORWARD_MESSAGE_SERVER', function(msg, userName) {
-                displayChat.append('<li class="collection-item"><strong>'+userName+': </strong>'+msg+'</li>')
+            socket.on('FORWARD_MESSAGE_SERVER', function(data) {
+                $('#userChatStatus').empty();
+                displayChat.append('<li class="collection-item"> '+data.userID+'  '+data.dateTime+'<strong>'+data.userName+': </strong>'+data.message+'</li>')
             });
 
             // function handleSendMessageKeyPress(){

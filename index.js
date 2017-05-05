@@ -4,6 +4,7 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var mysql = require('mysql');
 var async = require("async");
+var moment = require("moment");
 
 // Global variable
 var myUserIDG;
@@ -61,8 +62,9 @@ app.get('/', function(req, res) {
     res.sendFile(__dirname + '/index.html');
 });
 
-function userDetails(userName) {
-    this.userName = userName;
+function userDetails(myUserID,friendUserID) {
+    this.myUserID = myUserID;
+    this.friendUserID = friendUserID;
 }
 
 io.on('connection', function(socket) {
@@ -135,6 +137,8 @@ io.on('connection', function(socket) {
             socket.room = roomname; //we have this from both the userID's
             socket.join(roomname); //we have this from both the userID's
             socket.username = myUserNameG; //myUserName
+            socket.friendID = friendUserID;
+            socket.userID = myUserID;
             // here i will have to emmit details based on which the page will be setuped
             // displayFriendName
             // and older messages object which can be recovered later
@@ -151,6 +155,7 @@ io.on('connection', function(socket) {
                 ],
             };
 
+            this[myUserNameG] = new userDetails(myUserID, friendUserID);
             console.log(myUserNameG+" ======= "+friendUserNameG);
             console.log(initialDetailsObj);
             io.to(socket.id).emit('INITIAL_DETAILS', initialDetailsObj);
@@ -160,11 +165,59 @@ io.on('connection', function(socket) {
     });
 
     socket.on('SEND_MESSAGE_CLIENT', function(message) {
-        io.to(socket.room).emit('FORWARD_MESSAGE_SERVER', message, socket.username);
+
+        var date = moment.utc().format('YYYY-MM-DD HH:mm:ss');
+
+        // console.log(date); // 2015-09-13 03:39:27
+
+        var stillUtc = moment.utc(date).toDate();
+        var local = moment(stillUtc).utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss');
+        // console.log(local);
+        // myUserIDG;
+        // friendUserIDG;
+        console.log("myUserIDG :"+socket.friendID);
+        console.log("friendUserID :"+socket.userID);
+        console.log("userName :"+socket.username);
+        // storing message in database
+        pool.getConnection(function(err, connection) {
+            var insertObj = {
+                userID: socket.userID,
+                userFriendID: socket.friendID,
+                groupID: 0,
+                message: message,
+                videoID: 0,
+                messageTypeID: 2,
+                chatTypeID: 1,
+                created: local
+            }
+            var query = connection.query('INSERT INTO chats SET ?', insertObj, function (error, results, fields) {
+
+                connection.release();// And done with the connection.
+
+                if (error) throw error; // Handle error after the release.
+            });
+
+            // here now i will have to do selection , and then insertion or updation on the basis of that selection
+            outsidetheloop();
+        });
+
+        var forwardMessageServerData = {
+            message : message,
+            userName: socket.username,
+            userID: socket.userID,
+            dateTime: local
+        }
+        io.to(socket.room).emit('FORWARD_MESSAGE_SERVER',forwardMessageServerData);
     });
 
+    function selectFromNotification() {
+        insertNotification();
+        updateNotification();
+        // console.log("outside the loop was called");
+    }
+
     socket.on('FRIEND_TYPING',function() {
-        console.log('friend typing');
+        // console.log('friend typing');
         socket.broadcast.to(socket.room).emit('FRIEND_TYPING_CLIENT');
     });
 

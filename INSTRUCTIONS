@@ -1,0 +1,28 @@
+		doing npm install
+		-----------------
+1. open terminal inside extracted directory where "package.json" file is present
+2. type "npm install" in that terminal.
+		
+		
+		
+		Getting Started(db setup)
+		----------------
+1. create a database in phpmyadmin with name "socketio" 
+2. import the file "socketio.sql"
+3. In file "index.js" change the password at line no "19" with phpmyadmin password
+
+
+		Running The Demo
+		-----------------
+1. open terminal in same directory as file "index.js"
+2. in terminal enter "node index.js"
+3. you will get the confirmation message "listening on *:3000"
+4. in browser open url "localhost:3000"
+5. enter friendUserID as "12"
+6. enter myUserID as "13"
+7. now open another tab in browser with the url "localhost:3000"
+8. enter friendUserID as "13" // was earlier myUserID step 6
+9. enter myUserID as "12" // was earlier friendUserID step 5
+10. you can now begin chat
+		
+		
