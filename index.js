@@ -5,6 +5,7 @@ var io = require('socket.io')(http);
 var mysql = require('mysql');
 var async = require("async");
 var moment = require("moment");
+var request = require('request');
 
 // Global variable
 var myUserIDG;
@@ -116,6 +117,7 @@ io.on('connection', function(socket) {
 
                         console.log(results[0].userName);
                         myUserNameG = results[0].userName;
+                        accessToken = results[0].accessToken;
                         callback();
                     });
                 });
@@ -139,6 +141,7 @@ io.on('connection', function(socket) {
             socket.username = myUserNameG; //myUserName
             socket.friendID = friendUserID;
             socket.userID = myUserID;
+            socket.accessToken = accessToken;
             // here i will have to emmit details based on which the page will be setuped
             // displayFriendName
             // and older messages object which can be recovered later
@@ -190,15 +193,15 @@ io.on('connection', function(socket) {
                 chatTypeID: 1,
                 created: local
             }
-            var query = connection.query('INSERT INTO chats SET ?', insertObj, function (error, results, fields) {
-
-                connection.release();// And done with the connection.
-
-                if (error) throw error; // Handle error after the release.
-            });
+            // var query = connection.query('INSERT INTO chats SET ?', insertObj, function (error, results, fields) {
+            //
+            //     connection.release();// And done with the connection.
+            //
+            //     if (error) throw error; // Handle error after the release.
+            // });
 
             // here now i will have to do selection , and then insertion or updation on the basis of that selection
-            outsidetheloop();
+            selectFromNotification(message);
         });
 
         var forwardMessageServerData = {
@@ -210,10 +213,48 @@ io.on('connection', function(socket) {
         io.to(socket.room).emit('FORWARD_MESSAGE_SERVER',forwardMessageServerData);
     });
 
-    function selectFromNotification() {
-        insertNotification();
-        updateNotification();
-        // console.log("outside the loop was called");
+    function selectFromNotification(message) {
+        var options = {
+            url: 'http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/socketInsertUpdateNotifications',
+            headers: {
+                'accesstoken': socket.accessToken
+            },
+            form: {
+                userID: socket.userID,
+                userFriendID: socket.friendID,
+                message: message,
+                messageTypeID: 2,
+                chatTypeID: 1
+            }
+
+        };
+        request.post(options, function(error, response, body){
+            // console.log(body);
+            // console.log("----");
+            // console.log(response.body);
+            // response.body gives me access to the json data which i have entered
+        });
+
+        // pool.getConnection(function(err, connection) {
+        //     // var insertObj = {
+        //     //     userID: socket.userID,
+        //     //     userFriendID: socket.friendID,
+        //     //     groupID: 0,
+        //     //     message: message,
+        //     //     videoID: 0,
+        //     //     messageTypeID: 2,
+        //     //     chatTypeID: 1,
+        //     //     created: local
+        //     // }
+        //     var query = connection.query("SELECT * FROM notifications WHERE notificationTypeID = ? AND ((userID = ? AND userFriendID = ?) OR (userID = ? AND userFriendID = ?))", ['6',socket.userID, socket.friendID, socket.friendID, socket.userID ], function (error, results, fields) {
+        //
+        //         connection.release();// And done with the connection.
+        //
+        //         if (error) throw error; // Handle error after the release.
+        //         console.log(results);
+        //     });
+        // });
+        // // insertNotification();
     }
 
     socket.on('FRIEND_TYPING',function() {
