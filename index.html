@@ -33,6 +33,7 @@
                 $('#friendUserName').empty();
                 $('#friendUserName').append(data.friendUserName);
                 currentUserName = data.currentUserName;
+                console.log(data.earlyMessages);
             });
 
             chatForm.submit(function(e) {
@@ -43,8 +44,9 @@
             });
 
             socket.on('FORWARD_MESSAGE_SERVER', function(data) {
+                console.log(data);
                 $('#userChatStatus').empty();
-                displayChat.append('<li class="collection-item"> '+data.userID+'  '+data.dateTime+'<strong>'+data.userName+': </strong>'+data.message+'</li>')
+                displayChat.append('<li class="collection-item"> userID-> ' +data.userID+ ' | dateTime-> ' +data.dateTime+ '| messageTypeID->' +data.messageTypeID+ '| chatID->' +data.chatID+ '<strong>' +data.userName+ ': </strong>' +data.message+ '</li>')
             });
 
             // function handleSendMessageKeyPress(){

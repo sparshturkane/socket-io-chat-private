@@ -6,10 +6,12 @@ var mysql = require('mysql');
 var async = require("async");
 var moment = require("moment");
 var request = require('request');
-// var rootUrl = 'http://faarbetterfilms.com/rockabyteServicesV4Test/index.php/api/'; //production
-var rootUrl = 'http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/' //local
-// var dbPassword = 'faar@2015'; //server
-var dbPassword = '123456'; //local
+
+var rootUrl = 'http://faarbetterfilms.com/rockabyteServicesV4Test/index.php/api/'; //production
+var dbPassword = 'faar@2015'; //server
+
+// var rootUrl = 'http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/' //local
+// var dbPassword = '123456'; //local
 
 
 // Global variable
@@ -140,6 +142,8 @@ io.on('connection', function(socket) {
                             // // console.log(results[0].fullName);
                             myUserNameG = results[0].fullName;
                             accessToken = results[0].accessToken;
+                            profilePicG = results[0].profilePic;
+
                             callback();
                         });
                     });
@@ -164,26 +168,56 @@ io.on('connection', function(socket) {
                 socket.friendID = friendUserID;
                 socket.userID = myUserID;
                 socket.accessToken = accessToken;
+                if (profilePicG == '') {
+                    profilePicG = "";
+                }
+                socket.profilePic = profilePicG
                 // here i will have to emmit details based on which the page will be setuped
                 // displayFriendName
                 // and older messages object which can be recovered later
-                var initialDetailsObj = {
-                    friendUserName : friendUserNameG,
-                    currentUserName: myUserNameG,
-                    earlyMessages : [
-                        {
-                            msg:'hello'
-                        },
-                        {
-                            msg: 'reply asap',
-                        }
-                    ],
-                };
 
-                this[myUserNameG] = new userDetails(myUserID, friendUserID);
-                // // console.log(myUserNameG+" ======= "+friendUserNameG);
-                // //console.log(initialDetailsObj);
-                io.to(socket.id).emit('INITIAL_DETAILS', initialDetailsObj);
+                var options = {
+                    url: rootUrl+'getAllChats',
+                    headers: {
+                        'accesstoken': socket.accessToken
+                    },
+                    form: {
+                        userID: socket.userID,
+                        userFriendID: socket.friendID,
+
+                    },
+                    json:false
+
+                };
+                request.post(options, function(error, response, body){
+                    var firstChar = body.substring(0, 1);
+                    var firstCharCode = body.charCodeAt(0);
+                    if (firstCharCode == 65279) {
+                        // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
+                        body = body.substring(1);
+                    }
+
+                    earlierChat = JSON.parse(body);
+
+                    if (earlierChat.chats.length>0) {
+                        lastChatID = parseInt(earlierChat.chats[earlierChat.chats.length-1].chatID);
+                    } else {
+                        lastChatID = 0;
+                    }
+
+                    var initialDetailsObj = {
+                        friendUserName : friendUserNameG,
+                        currentUserName: myUserNameG,
+                        earlyMessages : earlierChat
+                    };
+
+                    this[myUserNameG] = new userDetails(myUserID, friendUserID);
+                    // // console.log(myUserNameG+" ======= "+friendUserNameG);
+                    // //console.log(initialDetailsObj);
+                    io.to(socket.id).emit('INITIAL_DETAILS', initialDetailsObj);
+                });
+
+
             } );
 
             // pool.getConnection(queryExecutionMyUserID);
@@ -193,6 +227,7 @@ io.on('connection', function(socket) {
 
     socket.on('SEND_MESSAGE_CLIENT', function(message) {
         // console.log('hitting SEND_MESSAGE_CLIENT');
+        console.log(Math.round(+new Date()/1000));
         if (socket.room !== undefined) {
             var date = moment.utc().format('YYYY-MM-DD HH:mm:ss');
 
@@ -229,13 +264,17 @@ io.on('connection', function(socket) {
             //     selectFromNotification(message);
             // });
 
-            selectFromNotification(message);
+            selectFromNotification(message, local);
+            lastChatID = lastChatID+1;
+
             var forwardMessageServerData = {
                 message : message,
+                profilePic: socket.profilePic,
                 userName: socket.username,
                 userID: socket.userID,
                 dateTime: local,
                 messageTypeID: '2',
+                chatID: lastChatID
 
             }
             io.to(socket.room).emit('FORWARD_MESSAGE_SERVER',forwardMessageServerData);
@@ -243,7 +282,20 @@ io.on('connection', function(socket) {
 
     });
 
-    function selectFromNotification(message) {
+    // function callbackForwardMessageServer(message, local, chatID) {
+    //     var forwardMessageServerData = {
+    //         message : message,
+    //         userName: socket.username,
+    //         userID: socket.userID,
+    //         dateTime: local,
+    //         messageTypeID: '2',
+    //         chatID: chatID
+    //
+    //     }
+    //     io.to(socket.room).emit('FORWARD_MESSAGE_SERVER',forwardMessageServerData);
+    // }
+
+    function selectFromNotification(message, local) {
         // console.log('service call');
         var options = {
             url: rootUrl+'socketInsertUpdateNotifications',
@@ -256,13 +308,27 @@ io.on('connection', function(socket) {
                 message: message,
                 messageTypeID: 2,
                 chatTypeID: 1,
-            }
+
+            },
+            json:false
 
         };
         request.post(options, function(error, response, body){
             // console.log(body);
             // console.log("----");
-            // console.log(response.body);
+            var firstChar = body.substring(0, 1);
+            var firstCharCode = body.charCodeAt(0);
+            if (firstCharCode == 65279) {
+                // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
+                body = body.substring(1);
+            }
+
+            var resp = JSON.parse(body);
+            // var resp = response.body;
+            // // console.log(resp);
+            var chatID = resp.chatID;
+            // console.log(chatID);
+            // callbackForwardMessageServer(message, local, chatID)
             // response.body gives me access to the json data which i have entered
         });
 
