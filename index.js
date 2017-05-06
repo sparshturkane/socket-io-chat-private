@@ -6,6 +6,11 @@ var mysql = require('mysql');
 var async = require("async");
 var moment = require("moment");
 var request = require('request');
+// var rootUrl = 'http://faarbetterfilms.com/rockabyteServicesV4Test/index.php/api/'; //production
+var rootUrl = 'http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/' //local
+// var dbPassword = 'faar@2015'; //server
+var dbPassword = '123456'; //local
+
 
 // Global variable
 var myUserIDG;
@@ -17,7 +22,7 @@ var friendUserNameG;
 var dbConnection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: '123456',
+    password: dbPassword,
     database: 'rockabyteServiceV3Test'
 });
 
@@ -26,7 +31,7 @@ var pool  = mysql.createPool({
     connectionLimit : 10,
     host: 'localhost',
     user: 'root',
-    password: '123456',
+    password: dbPassword,
     database: 'rockabyteServiceV3Test'
 });
 
@@ -72,150 +77,176 @@ io.on('connection', function(socket) {
     console.log('a user connected');
 
     socket.on('INITIAL_SETUP', function(friendUserID, myUserID) {
-        myUserIDG = myUserID;
-        friendUserIDG = friendUserID;
 
-        var first;
-        var last;
-        var roomname;
-        var username = myUserID;
+        // friendUserID = (typeof friendUserID !== 'undefined') ?  friendUserID : 1;
+        // myUserID = (typeof myUserID !== 'undefined') ?  myUserID : 1;
 
-        if(friendUserID > myUserID){
-            first = myUserID;
-            last = friendUserID;
-            roomname = first+last;
-        }else{
-            first = friendUserID;
-            last = myUserID;
-            roomname = first+last;
+        // friendUserID = friendUserID+1;
+        // myUserID = myUserID+1;
+        var friendOne = 1;
+        var userOne = 1;
+        friendOne = friendOne + friendUserID;
+        userOne = userOne + myUserID
+        console.log(friendOne);
+        console.log(userOne);
+        // if (((typeof friendUserID != '')||(typeof friendUserID != 'undefined'))
+        // && ((typeof myUserID != '')||(typeof friendUserID != 'undefined'))) {
+        if((friendOne != 1) && (userOne != 1)){
+            myUserIDG = myUserID;
+            friendUserIDG = friendUserID;
+            console.log(myUserID);
+            console.log(friendUserID);
+
+            var first;
+            var last;
+            var roomname;
+            var username = myUserID;
+
+            if(friendUserID > myUserID){
+                first = myUserID;
+                last = friendUserID;
+                roomname = first+last;
+            }else{
+                first = friendUserID;
+                last = myUserID;
+                roomname = first+last;
+            }
+
+            var friendUserName ;
+
+            // async.parallel([
+            //     function(callback) { function1(callback); },
+            //     function(callback) { function2(callback); }
+            // ], function(err, values) {
+            //     function3(values[0], values[1]);
+            // });
+
+            // async.parallel([
+            //     function(callback) { function1(callback); },
+            //     function(callback) { function2(callback); }
+            // ], function(err, values) {
+            //     function3(values[0], values[1]);
+            // });
+
+            async.parallel([
+                function(callback){
+                    pool.getConnection(function queryExecutionMyUserID(err, connection) {
+                        var query = connection.query('SELECT * FROM userProfile WHERE userID = ?', [myUserIDG], function (error, results, fields) {
+
+                            connection.release();// And done with the connection.
+
+                            if (error) throw error; // Handle error after the release.
+
+                            // // console.log(results[0].fullName);
+                            myUserNameG = results[0].fullName;
+                            accessToken = results[0].accessToken;
+                            callback();
+                        });
+                    });
+                },function(callback){
+                    pool.getConnection(function queryExecutionFriendUserID(err, connection) {
+                        var query = connection.query('SELECT * FROM userProfile WHERE userID = ?', [friendUserIDG], function (error, results, fields) {
+
+                            connection.release();// And done with the connection.
+
+                            if (error) throw error; // Handle error after the release.
+
+                            // // console.log(results[0].fullName);
+                            friendUserNameG = results[0].fullName;
+                            callback();
+                        });
+                    });
+                }
+            ], function(err, results) {
+                socket.room = roomname; //we have this from both the userID's
+                socket.join(roomname); //we have this from both the userID's
+                socket.username = myUserNameG; //myUserName
+                socket.friendID = friendUserID;
+                socket.userID = myUserID;
+                socket.accessToken = accessToken;
+                // here i will have to emmit details based on which the page will be setuped
+                // displayFriendName
+                // and older messages object which can be recovered later
+                var initialDetailsObj = {
+                    friendUserName : friendUserNameG,
+                    currentUserName: myUserNameG,
+                    earlyMessages : [
+                        {
+                            msg:'hello'
+                        },
+                        {
+                            msg: 'reply asap',
+                        }
+                    ],
+                };
+
+                this[myUserNameG] = new userDetails(myUserID, friendUserID);
+                // // console.log(myUserNameG+" ======= "+friendUserNameG);
+                // //console.log(initialDetailsObj);
+                io.to(socket.id).emit('INITIAL_DETAILS', initialDetailsObj);
+            } );
+
+            // pool.getConnection(queryExecutionMyUserID);
         }
 
-        var friendUserName ;
-
-        // async.parallel([
-        //     function(callback) { function1(callback); },
-        //     function(callback) { function2(callback); }
-        // ], function(err, values) {
-        //     function3(values[0], values[1]);
-        // });
-
-        // async.parallel([
-        //     function(callback) { function1(callback); },
-        //     function(callback) { function2(callback); }
-        // ], function(err, values) {
-        //     function3(values[0], values[1]);
-        // });
-
-        async.parallel([
-            function(callback){
-                pool.getConnection(function queryExecutionMyUserID(err, connection) {
-                    var query = connection.query('SELECT * FROM userProfile WHERE userID = ?', [myUserIDG], function (error, results, fields) {
-
-                        connection.release();// And done with the connection.
-
-                        if (error) throw error; // Handle error after the release.
-
-                        console.log(results[0].userName);
-                        myUserNameG = results[0].userName;
-                        accessToken = results[0].accessToken;
-                        callback();
-                    });
-                });
-            },function(callback){
-                pool.getConnection(function queryExecutionFriendUserID(err, connection) {
-                    var query = connection.query('SELECT * FROM userProfile WHERE userID = ?', [friendUserIDG], function (error, results, fields) {
-
-                        connection.release();// And done with the connection.
-
-                        if (error) throw error; // Handle error after the release.
-
-                        console.log(results[0].userName);
-                        friendUserNameG = results[0].userName;
-                        callback();
-                    });
-                });
-            }
-        ], function(err, results) {
-            socket.room = roomname; //we have this from both the userID's
-            socket.join(roomname); //we have this from both the userID's
-            socket.username = myUserNameG; //myUserName
-            socket.friendID = friendUserID;
-            socket.userID = myUserID;
-            socket.accessToken = accessToken;
-            // here i will have to emmit details based on which the page will be setuped
-            // displayFriendName
-            // and older messages object which can be recovered later
-            var initialDetailsObj = {
-                friendUserName : friendUserNameG,
-                currentUserName: myUserNameG,
-                earlyMessages : [
-                    {
-                        msg:'hello'
-                    },
-                    {
-                        msg: 'reply asap',
-                    }
-                ],
-            };
-
-            this[myUserNameG] = new userDetails(myUserID, friendUserID);
-            console.log(myUserNameG+" ======= "+friendUserNameG);
-            console.log(initialDetailsObj);
-            io.to(socket.id).emit('INITIAL_DETAILS', initialDetailsObj);
-        } );
-
-        // pool.getConnection(queryExecutionMyUserID);
     });
 
     socket.on('SEND_MESSAGE_CLIENT', function(message) {
+        // console.log('hitting SEND_MESSAGE_CLIENT');
+        if (socket.room !== undefined) {
+            var date = moment.utc().format('YYYY-MM-DD HH:mm:ss');
 
-        var date = moment.utc().format('YYYY-MM-DD HH:mm:ss');
+            // console.log(date); // 2015-09-13 03:39:27
 
-        // console.log(date); // 2015-09-13 03:39:27
-
-        var stillUtc = moment.utc(date).toDate();
-        var local = moment(stillUtc).utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss');
-        // console.log(local);
-        // myUserIDG;
-        // friendUserIDG;
-        console.log("myUserIDG :"+socket.friendID);
-        console.log("friendUserID :"+socket.userID);
-        console.log("userName :"+socket.username);
-        // storing message in database
-        pool.getConnection(function(err, connection) {
-            var insertObj = {
-                userID: socket.userID,
-                userFriendID: socket.friendID,
-                groupID: 0,
-                message: message,
-                videoID: 0,
-                messageTypeID: 2,
-                chatTypeID: 1,
-                created: local
-            }
-            // var query = connection.query('INSERT INTO chats SET ?', insertObj, function (error, results, fields) {
+            var stillUtc = moment.utc(date).toDate();
+            var local = moment(stillUtc).utcOffset("+05:30").format('YYYY-MM-DD HH:mm:ss');
+            // console.log(local);
+            // myUserIDG;
+            // friendUserIDG;
+            // // console.log("myUserIDG :"+socket.friendID);
+            // // console.log("friendUserID :"+socket.userID);
+            // // console.log("userName :"+socket.username);
+            // storing message in database
+            // pool.getConnection(function(err, connection) {
+            //     var insertObj = {
+            //         userID: socket.userID,
+            //         userFriendID: socket.friendID,
+            //         groupID: 0,
+            //         message: message,
+            //         videoID: 0,
+            //         messageTypeID: 2,
+            //         chatTypeID: 1,
+            //         created: local
+            //     }
+            //     // var query = connection.query('INSERT INTO chats SET ?', insertObj, function (error, results, fields) {
+            //     //
+            //     //     connection.release();// And done with the connection.
+            //     //
+            //     //     if (error) throw error; // Handle error after the release.
+            //     // });
             //
-            //     connection.release();// And done with the connection.
-            //
-            //     if (error) throw error; // Handle error after the release.
+            //     // here now i will have to do selection , and then insertion or updation on the basis of that selection
+            //     selectFromNotification(message);
             // });
 
-            // here now i will have to do selection , and then insertion or updation on the basis of that selection
             selectFromNotification(message);
-        });
+            var forwardMessageServerData = {
+                message : message,
+                userName: socket.username,
+                userID: socket.userID,
+                dateTime: local,
+                messageTypeID: '2',
 
-        var forwardMessageServerData = {
-            message : message,
-            userName: socket.username,
-            userID: socket.userID,
-            dateTime: local
+            }
+            io.to(socket.room).emit('FORWARD_MESSAGE_SERVER',forwardMessageServerData);
         }
-        io.to(socket.room).emit('FORWARD_MESSAGE_SERVER',forwardMessageServerData);
+
     });
 
     function selectFromNotification(message) {
+        // console.log('service call');
         var options = {
-            url: 'http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/socketInsertUpdateNotifications',
+            url: rootUrl+'socketInsertUpdateNotifications',
             headers: {
                 'accesstoken': socket.accessToken
             },
@@ -224,7 +255,7 @@ io.on('connection', function(socket) {
                 userFriendID: socket.friendID,
                 message: message,
                 messageTypeID: 2,
-                chatTypeID: 1
+                chatTypeID: 1,
             }
 
         };
@@ -258,12 +289,14 @@ io.on('connection', function(socket) {
     }
 
     socket.on('FRIEND_TYPING',function() {
-        // console.log('friend typing');
-        socket.broadcast.to(socket.room).emit('FRIEND_TYPING_CLIENT');
+        if (socket.room !== undefined) {
+            // console.log('friend typing');
+            socket.broadcast.to(socket.room).emit('FRIEND_TYPING_CLIENT');
+        }
     });
 
     socket.on('disconnect', function() {
-        console.log('user disconnected');
+        //  //console.log('user disconnected');
     });
 });
 
