@@ -26,7 +26,9 @@
             var currentUserName;
             var userChatStatus = $('#userChatStatus');
 
-            socket.emit('INITIAL_SETUP', prompt('friendUserID'), prompt('myUserID'));
+            friendUserID = prompt('friendUserID');
+            myUserID = prompt('myUserID')
+            socket.emit('INITIAL_SETUP', friendUserID, myUserID);
 
             socket.on('INITIAL_DETAILS', function(data) {
                 console.log(data);
@@ -65,6 +67,13 @@
                 $('#userChatStatus').append('typing...');
             });
 
+            // upload video form handeling
+            $('#uploadVideoForm').submit(function(event) {
+                event.preventDefault();
+                console.log('form submitted');
+                 $('#modal1').modal('close');
+            });
+
 
         });
 
@@ -73,6 +82,21 @@
         setInterval(function() {
             $('#userChatStatus').empty();
         }, 5000 );
+
+        // side nav bar
+        (function($){
+            $(function(){
+
+                $('.button-collapse').sideNav();
+
+            }); // end of document ready
+        })(jQuery); // end of jQuery name space
+
+        // modal
+        $(document).ready(function(){
+            // the "href" attribute of .modal-trigger must specify the modal ID that wants to be triggered
+            $('.modal').modal();
+        });
     </script>
     <body>
         <style media="screen">
@@ -98,8 +122,8 @@
                 font-size: 10px;
             }
         </style>
-        <nav>
-            <div class="nav-wrapper">
+        <nav class="nav-extended">
+            <div class="nav-wrapper container">
                 <a href="#!" class="brand-logo">
                     <i class="material-icons">
                         person_pin
@@ -113,6 +137,17 @@
                     <span id="userChatStatus" class="userChatStatus">
                     </span>
                 </a>
+                <a href="#" data-activates="mobile-demo" class="button-collapse"><i class="material-icons">menu</i></a>
+                <ul class="right hide-on-med-and-down" id="nav-mobile">
+                    <li><a data-target="modal1" href="#">Upload Video</a></li>
+                </ul>
+                <!-- <ul class="right hide-on-med-and-down" id="nav-mobile">
+                    <li><button data-target="modal1" class="btn">Modal</button></li>
+                </ul> -->
+
+                <ul class="side-nav" id="mobile-demo">
+                    <li><a  data-target="modal1" href="#">Upload Video</a></li>
+                </ul>
             </div>
         </nav>
 
@@ -139,13 +174,37 @@
         </footer>
 
         <!-- Modal Structure -->
-        <div id="modal1" class="modal bottom-sheet">
+        <div id="modal1" class="modal modal-fixed-footer">
             <div class="modal-content">
-                <h4>Modal Header</h4>
-                <p>A bunch of text</p>
+                <h4>Upload Video</h4>
+                <div class="row">
+                    <form class="col s12" id="uploadVideoForm">
+                        <div class="row">
+                            <div class="input-field col s12">
+                                <input id="thumbnailtime" type="number">
+                                <label for="thumbnailtime">Thumbnail Time</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="file-field input-field col s12">
+                                <div class="btn">
+                                    <span>File</span>
+                                    <input type="file" name="videoUpload" accept="video/*">
+                                </div>
+                                <div class="file-path-wrapper">
+                                    <input class="file-path validate" type="text">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <button class="btn waves-effect waves-light" style="float:right" type="submit">Submit</button>
+                        </div>
+                    </form>
+                </div>
             </div>
             <div class="modal-footer">
-                <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat">Agree</a>
+
+                <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat ">Cancel</a>
             </div>
         </div>
 
