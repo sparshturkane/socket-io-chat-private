@@ -39,6 +39,7 @@
                 console.log(data);
                 $('#friendUserName').empty();
                 $('#friendUserName').append(data.friendUserName);
+                accesstoken = data.accessToken;
                 currentUserName = data.currentUserName;
                 console.log(data.earlyMessages);
             });
@@ -52,8 +53,13 @@
 
             socket.on('FORWARD_MESSAGE_SERVER', function(data) {
                 console.log(data);
-                $('#userChatStatus').empty();
-                displayChat.append('<li class="collection-item"> userID-> ' +data.userID+ ' | dateTime-> ' +data.dateTime+ '| messageTypeID->' +data.messageTypeID+ '| chatID->' +data.chatID+ '<strong>' +data.userName+ ': </strong>' +data.message+ '</li>')
+                if (data.messageTypeID == 2) {
+                    $('#userChatStatus').empty();
+                    displayChat.append('<li class="collection-item"> userID-> ' +data.userID+ ' | dateTime-> ' +data.dateTime+ '| messageTypeID->' +data.messageTypeID+ '| chatID->' +data.chatID+ '<strong>' +data.userName+ ': </strong>' +data.message+ '</li>')
+                } else if(data.messageTypeID == 1) {
+                    displayChat.append('<li class="collection-item"> userID-> ' +data.userID+ ' | dateTime-> ' +data.dateTime+ '| messageTypeID->' +data.messageTypeID+ '| chatID->' +data.chatID+ '<strong>' +data.userName+ ': </strong> <video  height="200" controls><source src="'+data.videoLink+'" type="video/mp4"></video></li>')
+                }
+
             });
 
             // function handleSendMessageKeyPress(){
@@ -87,7 +93,7 @@
                 $.ajax({
                     url: "http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/uploadVideoChat",
                     headers: {
-                        "accesstoken": "9d3a98099d14ad53eaa0cb4486e59d31"
+                        "accesstoken": accesstoken
                     },
                     type: "POST",
                     data: new FormData(this),
@@ -103,10 +109,14 @@
 
                     success: function(data) {
                         //alert(data);
-                        $('#modal1').modal('close');
+
                         var objJson = JSON.parse(data);
-                        console.log(objJson);
+                        // console.log(objJson);
                         if (objJson.status == 1) {
+                            console.log(objJson.Video);
+                            var videoMessageObj = objJson.Video[0];
+                            socket.emit('SEND_VIDEO_MESSAGE_CLIENT', videoMessageObj)
+                            $('#modal1').modal('close');
                             console.log('video uploaded success fully');
                         }
                     },

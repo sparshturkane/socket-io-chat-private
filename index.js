@@ -214,7 +214,8 @@ io.on('connection', function(socket) {
                     var initialDetailsObj = {
                         friendUserName : friendUserNameG,
                         currentUserName: myUserNameG,
-                        earlyMessages : earlierChat
+                        earlyMessages : earlierChat,
+                        accessToken :socket.accessToken,
                     };
 
                     this[myUserNameG] = new userDetails(myUserID, friendUserID);
@@ -286,6 +287,10 @@ io.on('connection', function(socket) {
             io.to(socket.room).emit('FORWARD_MESSAGE_SERVER',forwardMessageServerData);
         }
 
+    });
+
+    socket.on('SEND_VIDEO_MESSAGE_CLIENT', function(videoMessageObj) {
+        io.to(socket.room).emit('FORWARD_MESSAGE_SERVER',videoMessageObj);
     });
 
     // function callbackForwardMessageServer(message, local, chatID) {
