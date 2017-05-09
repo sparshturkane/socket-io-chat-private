@@ -7,11 +7,13 @@ var async = require("async");
 var moment = require("moment");
 var request = require('request');
 
-var rootUrl = 'http://faarbetterfilms.com/rockabyteServicesV4Test/index.php/api/'; //production
-var dbPassword = 'faar@2015'; //server
+// server
+// var rootUrl = 'http://faarbetterfilms.com/rockabyteServicesV4Test/index.php/api/'; //production
+// var dbPassword = 'faar@2015'; //server
 
-// var rootUrl = 'http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/' //local
-// var dbPassword = '123456'; //local
+// localhost
+var rootUrl = 'http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/' //local
+var dbPassword = '123456'; //local
 
 
 // Global variable
@@ -200,7 +202,11 @@ io.on('connection', function(socket) {
                     earlierChat = JSON.parse(body);
 
                     if (earlierChat.allChats.length>0) {
-                        lastChatID = parseInt(earlierChat.allChats[earlierChat.allChats.length-1].chatID);
+                        lastChatID = parseInt(earlierChat.allChats[earlierChat.allChats.length-1].chats[earlierChat.allChats[earlierChat.allChats.length-1].chats.length - 1].chatID);
+                        console.log(lastChatID);
+
+                        // document for lastChatID code
+                        // https://docs.google.com/drawings/d/1m6Za8Va2UPbBK8NgUjcPZbkbnUjvKorauxFBEdF3Qik/pub?w=1428&h=1111
                     } else {
                         lastChatID = 0;
                     }
