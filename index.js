@@ -199,8 +199,8 @@ io.on('connection', function(socket) {
 
                     earlierChat = JSON.parse(body);
 
-                    if (earlierChat.chats.length>0) {
-                        lastChatID = parseInt(earlierChat.chats[earlierChat.chats.length-1].chatID);
+                    if (earlierChat.allChats.length>0) {
+                        lastChatID = parseInt(earlierChat.allChats[earlierChat.allChats.length-1].chatID);
                     } else {
                         lastChatID = 0;
                     }
