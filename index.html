@@ -28,6 +28,11 @@
 
             friendUserID = prompt('friendUserID');
             myUserID = prompt('myUserID')
+
+            //providing userID and friendID to upload form
+            $('#userIDUploadVideo').val(myUserID);
+            $('#userFriendIDUploadVideo').val(friendUserID);
+
             socket.emit('INITIAL_SETUP', friendUserID, myUserID);
 
             socket.on('INITIAL_DETAILS', function(data) {
@@ -71,7 +76,44 @@
             $('#uploadVideoForm').submit(function(event) {
                 event.preventDefault();
                 console.log('form submitted');
-                 $('#modal1').modal('close');
+
+
+                var formData = new FormData(this);
+                for (var [key, value] of formData.entries()) {
+                    console.log(key, value);
+                }
+
+                console.log(formData);
+                $.ajax({
+                    url: "http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/uploadVideoChat",
+                    headers: {
+                        "accesstoken": "9d3a98099d14ad53eaa0cb4486e59d31"
+                    },
+                    type: "POST",
+                    data: new FormData(this),
+                    contentType: false,
+                    cache: false,
+                    processData: false,
+                    mimeType: "multipart/form-data",
+                    async: true,
+                    crossDomain: true,
+
+                    beforeSend: function() {
+                    },
+
+                    success: function(data) {
+                        //alert(data);
+                        $('#modal1').modal('close');
+                        var objJson = JSON.parse(data);
+                        console.log(objJson);
+                        if (objJson.status == 1) {
+                            console.log('video uploaded success fully');
+                        }
+                    },
+                    error: function(request, status, error) {
+                        alert(error);
+                    }
+                });
             });
 
 
@@ -179,9 +221,11 @@
                 <h4>Upload Video</h4>
                 <div class="row">
                     <form class="col s12" id="uploadVideoForm">
+                        <input type="hidden" name="userID" id="userIDUploadVideo">
+                        <input type="hidden" name="userFriendID" id="userFriendIDUploadVideo">
                         <div class="row">
                             <div class="input-field col s12">
-                                <input id="thumbnailtime" type="number">
+                                <input id="thumbnailtime" type="number" name="thumbnailTime" required>
                                 <label for="thumbnailtime">Thumbnail Time</label>
                             </div>
                         </div>
@@ -189,7 +233,7 @@
                             <div class="file-field input-field col s12">
                                 <div class="btn">
                                     <span>File</span>
-                                    <input type="file" name="videoUpload" accept="video/*">
+                                    <input type="file" name="videoUpload" accept="video/*" required>
                                 </div>
                                 <div class="file-path-wrapper">
                                     <input class="file-path validate" type="text">
