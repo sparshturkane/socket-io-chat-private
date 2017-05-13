@@ -27,13 +27,14 @@
             var userChatStatus = $('#userChatStatus');
 
             friendUserID = prompt('friendUserID');
-            myUserID = prompt('myUserID')
+            myUserID = prompt('myUserID');
+            var chatTypeID = prompt('chatTypeID');
 
             //providing userID and friendID to upload form
             $('#userIDUploadVideo').val(myUserID);
             $('#userFriendIDUploadVideo').val(friendUserID);
 
-            socket.emit('INITIAL_SETUP', friendUserID, myUserID);
+            socket.emit('INITIAL_SETUP', friendUserID, myUserID, chatTypeID);
 
             socket.on('INITIAL_DETAILS', function(data) {
                 console.log(data);

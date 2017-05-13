@@ -8,12 +8,12 @@ var moment = require("moment");
 var request = require('request');
 
 // server
-// var rootUrl = 'http://faarbetterfilms.com/rockabyteServicesV4Test/index.php/api/'; //production
-// var dbPassword = 'faar@2015'; //server
+var rootUrl = 'http://faarbetterfilms.com/rockabyteServicesV4Test/index.php/api/'; //production
+var dbPassword = 'faar@2015'; //server
 
 // localhost
-var rootUrl = 'http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/' //local
-var dbPassword = '123456'; //local
+// var rootUrl = 'http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/' //local
+// var dbPassword = '123456'; //local
 
 
 // Global variable
@@ -80,156 +80,304 @@ function userDetails(myUserID,friendUserID) {
 io.on('connection', function(socket) {
     console.log('a user connected');
 
-    socket.on('INITIAL_SETUP', function(friendUserID, myUserID) {
+    socket.on('INITIAL_SETUP', function(friendUserID, myUserID, chatTypeID) {
+        chatTypeIDG = chatTypeID;
+        if (chatTypeID == 1) {
+            // friendUserID = (typeof friendUserID !== 'undefined') ?  friendUserID : 1;
+            // myUserID = (typeof myUserID !== 'undefined') ?  myUserID : 1;
 
-        // friendUserID = (typeof friendUserID !== 'undefined') ?  friendUserID : 1;
-        // myUserID = (typeof myUserID !== 'undefined') ?  myUserID : 1;
+            // friendUserID = friendUserID+1;
+            // myUserID = myUserID+1;
+            var friendOne = 1;
+            var userOne = 1;
+            friendOne = friendOne + friendUserID;
+            userOne = userOne + myUserID
+            console.log(friendOne);
+            console.log(userOne);
+            // if (((typeof friendUserID != '')||(typeof friendUserID != 'undefined'))
+            // && ((typeof myUserID != '')||(typeof friendUserID != 'undefined'))) {
+            if((friendOne != 1) && (userOne != 1)){
+                myUserIDG = myUserID;
+                friendUserIDG = friendUserID;
+                console.log(myUserID);
+                console.log(friendUserID);
 
-        // friendUserID = friendUserID+1;
-        // myUserID = myUserID+1;
-        var friendOne = 1;
-        var userOne = 1;
-        friendOne = friendOne + friendUserID;
-        userOne = userOne + myUserID
-        console.log(friendOne);
-        console.log(userOne);
-        // if (((typeof friendUserID != '')||(typeof friendUserID != 'undefined'))
-        // && ((typeof myUserID != '')||(typeof friendUserID != 'undefined'))) {
-        if((friendOne != 1) && (userOne != 1)){
-            myUserIDG = myUserID;
-            friendUserIDG = friendUserID;
-            console.log(myUserID);
-            console.log(friendUserID);
+                var first;
+                var last;
+                var roomname;
+                var username = myUserID;
 
-            var first;
-            var last;
-            var roomname;
-            var username = myUserID;
+                if(friendUserID > myUserID){
+                    first = myUserID;
+                    last = friendUserID;
+                    roomname = first+last;
+                }else{
+                    first = friendUserID;
+                    last = myUserID;
+                    roomname = first+last;
+                }
 
-            if(friendUserID > myUserID){
-                first = myUserID;
-                last = friendUserID;
-                roomname = first+last;
-            }else{
-                first = friendUserID;
-                last = myUserID;
-                roomname = first+last;
+                var friendUserName ;
+
+                // async.parallel([
+                //     function(callback) { function1(callback); },
+                //     function(callback) { function2(callback); }
+                // ], function(err, values) {
+                //     function3(values[0], values[1]);
+                // });
+
+                // async.parallel([
+                //     function(callback) { function1(callback); },
+                //     function(callback) { function2(callback); }
+                // ], function(err, values) {
+                //     function3(values[0], values[1]);
+                // });
+
+                async.parallel([
+                    function(callback){
+                        pool.getConnection(function queryExecutionMyUserID(err, connection) {
+                            var query = connection.query('SELECT * FROM userProfile WHERE userID = ?', [myUserIDG], function (error, results, fields) {
+
+                                connection.release();// And done with the connection.
+
+                                if (error) throw error; // Handle error after the release.
+
+                                // // console.log(results[0].fullName);
+                                myUserNameG = results[0].fullName;
+                                accessToken = results[0].accessToken;
+                                profilePicG = results[0].profilePic;
+
+                                callback();
+                            });
+                        });
+                    },function(callback){
+                        pool.getConnection(function queryExecutionFriendUserID(err, connection) {
+                            var query = connection.query('SELECT * FROM userProfile WHERE userID = ?', [friendUserIDG], function (error, results, fields) {
+
+                                connection.release();// And done with the connection.
+
+                                if (error) throw error; // Handle error after the release.
+
+                                // // console.log(results[0].fullName);
+                                friendUserNameG = results[0].fullName;
+                                callback();
+                            });
+                        });
+                    }
+                    ], function(err, results) {
+                        socket.room = roomname; //we have this from both the userID's
+                        socket.join(roomname); //we have this from both the userID's
+                        socket.username = myUserNameG; //myUserName
+                        socket.friendID = friendUserID;
+                        socket.userID = myUserID;
+                        socket.accessToken = accessToken;
+                        socket.chatTypeID = chatTypeID;
+                        if (profilePicG == '') {
+                            profilePicG = "";
+                        }
+                        socket.profilePic = profilePicG
+                        // here i will have to emmit details based on which the page will be setuped
+                        // displayFriendName
+                        // and older messages object which can be recovered later
+
+                        var options = {
+                            url: rootUrl+'getAllChats',
+                            headers: {
+                                'accesstoken': socket.accessToken
+                            },
+                            form: {
+                                userID: socket.userID,
+                                userFriendID: socket.friendID,
+
+                            },
+                            json:false
+
+                        };
+                        request.post(options, function(error, response, body){
+                        var firstChar = body.substring(0, 1);
+                        var firstCharCode = body.charCodeAt(0);
+                        if (firstCharCode == 65279) {
+                            // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
+                            body = body.substring(1);
+                        }
+
+                        earlierChat = JSON.parse(body);
+
+                        if (earlierChat.allChats.length>0) {
+                            lastChatID = parseInt(earlierChat.allChats[earlierChat.allChats.length-1].chats[earlierChat.allChats[earlierChat.allChats.length-1].chats.length - 1].chatID);
+                            console.log(lastChatID);
+
+                            // document for lastChatID code
+                            // https://docs.google.com/drawings/d/1m6Za8Va2UPbBK8NgUjcPZbkbnUjvKorauxFBEdF3Qik/pub?w=1428&h=1111
+                        } else {
+                            lastChatID = 0;
+                        }
+
+                        var initialDetailsObj = {
+                            friendUserName : friendUserNameG,
+                            currentUserName: myUserNameG,
+                            earlyMessages : earlierChat,
+                            accessToken :socket.accessToken,
+                        };
+
+                        this[myUserNameG] = new userDetails(myUserID, friendUserID);
+                        // // console.log(myUserNameG+" ======= "+friendUserNameG);
+                        // //console.log(initialDetailsObj);
+                        io.to(socket.id).emit('INITIAL_DETAILS', initialDetailsObj);
+                    });
+
+
+                } );
+
+                // pool.getConnection(queryExecutionMyUserID);
             }
 
-            var friendUserName ;
 
-            // async.parallel([
-            //     function(callback) { function1(callback); },
-            //     function(callback) { function2(callback); }
-            // ], function(err, values) {
-            //     function3(values[0], values[1]);
-            // });
+        } else if (chatTypeID == 2) {
 
-            // async.parallel([
-            //     function(callback) { function1(callback); },
-            //     function(callback) { function2(callback); }
-            // ], function(err, values) {
-            //     function3(values[0], values[1]);
-            // });
+            var friendOne = 1;
+            var userOne = 1;
+            friendOne = friendOne + friendUserID;
+            userOne = userOne + myUserID
+            console.log(friendOne);
+            console.log(userOne);
 
-            async.parallel([
-                function(callback){
-                    pool.getConnection(function queryExecutionMyUserID(err, connection) {
-                        var query = connection.query('SELECT * FROM userProfile WHERE userID = ?', [myUserIDG], function (error, results, fields) {
+            if((friendOne != 1) && (userOne != 1)){
+                myUserIDG = myUserID;
+                friendUserIDG = friendUserID;
+                console.log(myUserID);
+                console.log(friendUserID);
 
-                            connection.release();// And done with the connection.
+                var first;
+                var last;
+                var roomname;
+                var username = myUserID;
 
-                            if (error) throw error; // Handle error after the release.
-
-                            // // console.log(results[0].fullName);
-                            myUserNameG = results[0].fullName;
-                            accessToken = results[0].accessToken;
-                            profilePicG = results[0].profilePic;
-
-                            callback();
-                        });
-                    });
-                },function(callback){
-                    pool.getConnection(function queryExecutionFriendUserID(err, connection) {
-                        var query = connection.query('SELECT * FROM userProfile WHERE userID = ?', [friendUserIDG], function (error, results, fields) {
-
-                            connection.release();// And done with the connection.
-
-                            if (error) throw error; // Handle error after the release.
-
-                            // // console.log(results[0].fullName);
-                            friendUserNameG = results[0].fullName;
-                            callback();
-                        });
-                    });
+                if(friendUserID > myUserID){
+                    first = myUserID;
+                    last = friendUserID;
+                    roomname = first+last;
+                }else{
+                    first = friendUserID;
+                    last = myUserID;
+                    roomname = first+last;
                 }
-            ], function(err, results) {
-                socket.room = roomname; //we have this from both the userID's
-                socket.join(roomname); //we have this from both the userID's
-                socket.username = myUserNameG; //myUserName
-                socket.friendID = friendUserID;
-                socket.userID = myUserID;
-                socket.accessToken = accessToken;
-                if (profilePicG == '') {
-                    profilePicG = "";
-                }
-                socket.profilePic = profilePicG
-                // here i will have to emmit details based on which the page will be setuped
-                // displayFriendName
-                // and older messages object which can be recovered later
 
-                var options = {
-                    url: rootUrl+'getAllChats',
-                    headers: {
-                        'accesstoken': socket.accessToken
-                    },
-                    form: {
-                        userID: socket.userID,
-                        userFriendID: socket.friendID,
+                var friendUserName ;
 
-                    },
-                    json:false
+                // async.parallel([
+                //     function(callback) { function1(callback); },
+                //     function(callback) { function2(callback); }
+                // ], function(err, values) {
+                //     function3(values[0], values[1]);
+                // });
 
-                };
-                request.post(options, function(error, response, body){
-                    var firstChar = body.substring(0, 1);
-                    var firstCharCode = body.charCodeAt(0);
-                    if (firstCharCode == 65279) {
-                        // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
-                        body = body.substring(1);
+                // async.parallel([
+                //     function(callback) { function1(callback); },
+                //     function(callback) { function2(callback); }
+                // ], function(err, values) {
+                //     function3(values[0], values[1]);
+                // });
+
+                async.parallel([
+                    function(callback){
+                        pool.getConnection(function queryExecutionMyUserID(err, connection) {
+                            var query = connection.query('SELECT * FROM userProfile WHERE userID = ?', [myUserIDG], function (error, results, fields) {
+
+                                connection.release();// And done with the connection.
+
+                                if (error) throw error; // Handle error after the release.
+
+                                // // console.log(results[0].fullName);
+                                myUserNameG = results[0].fullName;
+                                accessToken = results[0].accessToken;
+                                profilePicG = results[0].profilePic;
+
+                                callback();
+                            });
+                        });
+                    },function(callback){
+                        pool.getConnection(function queryExecutionFriendUserID(err, connection) {
+                            var query = connection.query('SELECT * FROM groups WHERE groupID = ?', [friendUserIDG], function (error, results, fields) {
+
+                                connection.release();// And done with the connection.
+
+                                if (error) throw error; // Handle error after the release.
+
+                                // // console.log(results[0].fullName);
+                                friendUserNameG = results[0].groupName;
+                                callback();
+                            });
+                        });
                     }
+                    ], function(err, results) {
+                        socket.room = friendUserIDG; //we have this from both the userID's
+                        socket.join(friendUserIDG); //we have this from both the userID's
+                        socket.username = myUserNameG; //myUserName
+                        socket.friendID = friendUserID;
+                        socket.userID = myUserID;
+                        socket.accessToken = accessToken;
+                        socket.chatTypeID = chatTypeID;
+                        if (profilePicG == '') {
+                            profilePicG = "";
+                        }
+                        socket.profilePic = profilePicG
+                        // here i will have to emmit details based on which the page will be setuped
+                        // displayFriendName
+                        // and older messages object which can be recovered later
 
-                    earlierChat = JSON.parse(body);
+                        var options = {
+                            url: rootUrl+'getAllGroupChats',
+                            headers: {
+                                'accesstoken': socket.accessToken
+                            },
+                            form: {
+                                userID: socket.userID,
+                                userFriendID: socket.friendID,
 
-                    if (earlierChat.allChats.length>0) {
-                        lastChatID = parseInt(earlierChat.allChats[earlierChat.allChats.length-1].chats[earlierChat.allChats[earlierChat.allChats.length-1].chats.length - 1].chatID);
-                        console.log(lastChatID);
+                            },
+                            json:false
 
-                        // document for lastChatID code
-                        // https://docs.google.com/drawings/d/1m6Za8Va2UPbBK8NgUjcPZbkbnUjvKorauxFBEdF3Qik/pub?w=1428&h=1111
-                    } else {
-                        lastChatID = 0;
-                    }
+                        };
+                        request.post(options, function(error, response, body){
+                        var firstChar = body.substring(0, 1);
+                        var firstCharCode = body.charCodeAt(0);
+                        if (firstCharCode == 65279) {
+                            // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
+                            body = body.substring(1);
+                        }
 
-                    var initialDetailsObj = {
-                        friendUserName : friendUserNameG,
-                        currentUserName: myUserNameG,
-                        earlyMessages : earlierChat,
-                        accessToken :socket.accessToken,
-                    };
+                        earlierChat = JSON.parse(body);
 
-                    this[myUserNameG] = new userDetails(myUserID, friendUserID);
-                    // // console.log(myUserNameG+" ======= "+friendUserNameG);
-                    // //console.log(initialDetailsObj);
-                    io.to(socket.id).emit('INITIAL_DETAILS', initialDetailsObj);
-                });
+                        if (earlierChat.allChats.length>0) {
+                            lastChatID = parseInt(earlierChat.allChats[earlierChat.allChats.length-1].chats[earlierChat.allChats[earlierChat.allChats.length-1].chats.length - 1].chatID);
+                            console.log(lastChatID);
+
+                            // document for lastChatID code
+                            // https://docs.google.com/drawings/d/1m6Za8Va2UPbBK8NgUjcPZbkbnUjvKorauxFBEdF3Qik/pub?w=1428&h=1111
+                        } else {
+                            lastChatID = 0;
+                        }
+
+                        var initialDetailsObj = {
+                            friendUserName : friendUserNameG,
+                            currentUserName: myUserNameG,
+                            earlyMessages : earlierChat,
+                            accessToken :socket.accessToken,
+                        };
+
+                        this[myUserNameG] = new userDetails(myUserID, friendUserID);
+                        // // console.log(myUserNameG+" ======= "+friendUserNameG);
+                        // //console.log(initialDetailsObj);
+                        io.to(socket.id).emit('INITIAL_DETAILS', initialDetailsObj);
+                    });
 
 
-            } );
+                } );
 
-            // pool.getConnection(queryExecutionMyUserID);
+                // pool.getConnection(queryExecutionMyUserID);
+            }
         }
-
     });
 
     socket.on('SEND_MESSAGE_CLIENT', function(message) {
@@ -271,7 +419,16 @@ io.on('connection', function(socket) {
             //     selectFromNotification(message);
             // });
 
-            selectFromNotification(message, local);
+            if (chatTypeIDG == 1) {
+                console.log("private chat");
+                selectFromNotification(message, local);
+            }
+
+
+            if (chatTypeIDG == 2) {
+                console.log("group chat");
+                selectFromNotificationGroup(message, local);
+            }
             lastChatID = lastChatID+1;
 
             var forwardMessageServerData = {
@@ -281,7 +438,10 @@ io.on('connection', function(socket) {
                 userID: socket.userID,
                 dateTime: local,
                 messageTypeID: '2',
-                chatID: lastChatID
+                chatID: lastChatID,
+                videoLink: '',
+                thumbnail: '',
+                duration: '',
 
             }
             io.to(socket.room).emit('FORWARD_MESSAGE_SERVER',forwardMessageServerData);
@@ -319,6 +479,65 @@ io.on('connection', function(socket) {
                 message: message,
                 messageTypeID: 2,
                 chatTypeID: 1,
+
+            },
+            json:false
+
+        };
+        request.post(options, function(error, response, body){
+            // console.log(body);
+            // console.log("----");
+            var firstChar = body.substring(0, 1);
+            var firstCharCode = body.charCodeAt(0);
+            if (firstCharCode == 65279) {
+                // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
+                body = body.substring(1);
+            }
+
+            var resp = JSON.parse(body);
+            // var resp = response.body;
+            // // console.log(resp);
+            var chatID = resp.chatID;
+            // console.log(chatID);
+            // callbackForwardMessageServer(message, local, chatID)
+            // response.body gives me access to the json data which i have entered
+        });
+
+        // pool.getConnection(function(err, connection) {
+        //     // var insertObj = {
+        //     //     userID: socket.userID,
+        //     //     userFriendID: socket.friendID,
+        //     //     groupID: 0,
+        //     //     message: message,
+        //     //     videoID: 0,
+        //     //     messageTypeID: 2,
+        //     //     chatTypeID: 1,
+        //     //     created: local
+        //     // }
+        //     var query = connection.query("SELECT * FROM notifications WHERE notificationTypeID = ? AND ((userID = ? AND userFriendID = ?) OR (userID = ? AND userFriendID = ?))", ['6',socket.userID, socket.friendID, socket.friendID, socket.userID ], function (error, results, fields) {
+        //
+        //         connection.release();// And done with the connection.
+        //
+        //         if (error) throw error; // Handle error after the release.
+        //         console.log(results);
+        //     });
+        // });
+        // // insertNotification();
+    }
+
+    function selectFromNotificationGroup(message, local) {
+        // console.log('service call');
+        var options = {
+            url: rootUrl+'socketInsertUpdateGroupNotifications',
+            headers: {
+                'accesstoken': socket.accessToken
+            },
+            form: {
+                userID: socket.userID,
+                userFriendID: socket.friendID,
+                message: message,
+                messageTypeID: 2,
+                chatTypeID: 2,
 
             },
             json:false
