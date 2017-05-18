@@ -90,7 +90,7 @@ io.on('connection', function(socket) {
         if (chatTypeID == 1) {
 
             //pushing connected users in array
-            privateChatConnectedUserID.push(myUserID);
+            // privateChatConnectedUserID.push(myUserID);
 
             // friendUserID = (typeof friendUserID !== 'undefined') ?  friendUserID : 1;
             // myUserID = (typeof myUserID !== 'undefined') ?  myUserID : 1;
@@ -242,7 +242,8 @@ io.on('connection', function(socket) {
                         io.to(socket.id).emit('INITIAL_DETAILS', initialDetailsObj);
                     });
 
-
+                        // online offline status of user
+                        privateUserOnlineOfflineStatus('1');
                 } );
 
                 // pool.getConnection(queryExecutionMyUserID);
@@ -417,7 +418,7 @@ io.on('connection', function(socket) {
 
     socket.on('SEND_MESSAGE_CLIENT', function(message) {
         // console.log('hitting SEND_MESSAGE_CLIENT');
-        console.log(privateChatConnectedUserID);
+        // console.log(privateChatConnectedUserID);
         console.log(Math.round(+new Date()/1000));
         if (socket.room !== undefined) {
             var date = moment.utc().format('YYYY-MM-DD HH:mm:ss');
@@ -516,7 +517,8 @@ io.on('connection', function(socket) {
                 message: message,
                 messageTypeID: 2,
                 chatTypeID: 1,
-                onlineUsersData: privateChatConnectedUserID,
+                groupID: socket.room,
+                // onlineUsersData: privateChatConnectedUserID,
 
             },
             json:false
@@ -657,6 +659,26 @@ io.on('connection', function(socket) {
         });
     }
 
+    function privateUserOnlineOfflineStatus(onlineOfflineStatus) {
+        var options = {
+            url: rootUrl+'privateUserOnlineOfflineStatus',
+            headers: {
+                'accesstoken': socket.accessToken
+            },
+            form: {
+                userID: socket.userID,
+                groupID: socket.room,
+                onlineOfflineStatus: onlineOfflineStatus
+
+            },
+            json:false
+
+        };
+        request.post(options, function(error, response, body){
+            // response is not needed
+        });
+    }
+
     socket.on('FRIEND_TYPING',function() {
         if (socket.room !== undefined) {
             // console.log('friend typing');
@@ -673,7 +695,8 @@ io.on('connection', function(socket) {
 
         // private chat disconnect 
         if (socket.chatTypeID == 1) {
-            privateChatConnectedUserID.splice(privateChatConnectedUserID.indexOf(socket.userID), 1);
+            // privateChatConnectedUserID.splice(privateChatConnectedUserID.indexOf(socket.userID), 1);
+            privateUserOnlineOfflineStatus('0')
         }
         
     });
