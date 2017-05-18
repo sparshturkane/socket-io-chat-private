@@ -71,6 +71,23 @@
             chatMessage.keypress(function() {
                 // console.log("key pressed");
                 socket.emit('FRIEND_TYPING');
+                var videoMessageObj = {
+                    videoID: "422",
+                    message: "",
+                    messageTypeID: "1",
+                    userID: "3844",
+                    userName: "Prathmesh Angachekar",
+                    profilePic: "http://faarbetterfilms.com/rockabyteServicesV2/uploads/userProfilePicture/aed9e6bf76812b930288c7472037c1e8.jpg",
+                    videoLink: "http://faarbetterfilms.com/rockabyteServicesV3Test/uploads/video/555e8dfad41c726585f8baa0ba77a29f.mp4",
+                    title: "Testingp",
+                    duration: "01:23",
+                    thumbnail: "http://faarbetterfilms.com/rockabyteServicesV3Test/uploads/video/thumbnail/555e8dfad41c726585f8baa0ba77a29f.jpg",
+                    dateTime: "2017-03-10 16:59:30",
+                    chatID: "",
+                    chatTypeID: "2",
+                    isSystemVideo: "1"
+                }
+                socket.emit('SEND_VIDEO_MESSAGE_CLIENT', videoMessageObj)
             });
 
             // receiving when friend types from server

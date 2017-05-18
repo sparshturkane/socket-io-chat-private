@@ -8,12 +8,12 @@ var moment = require("moment");
 var request = require('request');
 
 // server
-// var rootUrl = 'http://faarbetterfilms.com/rockabyteServicesV4Test/index.php/api/'; //production
-// var dbPassword = 'faar@2015'; //server
+var rootUrl = 'http://faarbetterfilms.com/rockabyteServicesV4Test/index.php/api/'; //production
+var dbPassword = 'faar@2015'; //server
 
 // localhost
-var rootUrl = 'http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/' //local
-var dbPassword = '123456'; //local
+// var rootUrl = 'http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/' //local
+// var dbPassword = '123456'; //local
 
 
 // Global variable
@@ -488,6 +488,11 @@ io.on('connection', function(socket) {
     });
 
     socket.on('SEND_VIDEO_MESSAGE_CLIENT', function(videoMessageObj) {
+        if (videoMessageObj.isSystemVideo == 1) {
+            userSystemVideoInChat(videoMessageObj.videoLink, videoMessageObj.duration, videoMessageObj.thumbnail);
+        }
+        
+
         io.to(socket.room).emit('FORWARD_MESSAGE_SERVER',videoMessageObj);
     });
 
@@ -676,6 +681,30 @@ io.on('connection', function(socket) {
         };
         request.post(options, function(error, response, body){
             // response is not needed
+        });
+    }
+
+    function userSystemVideoInChat(videoLink, duration, thumbnail) {
+        var options = {
+            url: rootUrl+'userSystemVideoInChat',
+            headers: {
+                'accesstoken': socket.accessToken
+            },
+            form: {
+                userID : socket.userID,
+                userFriendID : socket.friendID,
+                videoLink : videoLink,
+                duration : duration,
+                thumbnail : thumbnail,
+                chatTypeID : socket.chatTypeID,
+
+            },
+            json:false
+
+        };
+        request.post(options, function(error, response, body){
+            // response is not needed
+            // console.log(body);
         });
     }
 
