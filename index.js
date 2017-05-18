@@ -8,12 +8,12 @@ var moment = require("moment");
 var request = require('request');
 
 // server
-var rootUrl = 'http://faarbetterfilms.com/rockabyteServicesV4Test/index.php/api/'; //production
-var dbPassword = 'faar@2015'; //server
+// var rootUrl = 'http://faarbetterfilms.com/rockabyteServicesV4Test/index.php/api/'; //production
+// var dbPassword = 'faar@2015'; //server
 
 // localhost
-// var rootUrl = 'http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/' //local
-// var dbPassword = '123456'; //local
+var rootUrl = 'http://localhost/projects/rockabyte/rockabyteServicesV4Test/index.php/api/' //local
+var dbPassword = '123456'; //local
 
 
 // Global variable
@@ -21,6 +21,11 @@ var myUserIDG;
 var friendUserIDG;
 var myUserNameG;
 var friendUserNameG;
+// creating two arrays user and connections
+connectedUserID = [];
+
+// private Chat connectedUserID
+privateChatConnectedUserID = [];
 
 // using db connection
 var dbConnection = mysql.createConnection({
@@ -83,6 +88,10 @@ io.on('connection', function(socket) {
     socket.on('INITIAL_SETUP', function(friendUserID, myUserID, chatTypeID) {
         chatTypeIDG = chatTypeID;
         if (chatTypeID == 1) {
+
+            //pushing connected users in array
+            privateChatConnectedUserID.push(myUserID);
+
             // friendUserID = (typeof friendUserID !== 'undefined') ?  friendUserID : 1;
             // myUserID = (typeof myUserID !== 'undefined') ?  myUserID : 1;
 
@@ -201,6 +210,13 @@ io.on('connection', function(socket) {
                             body = body.substring(1);
                         }
 
+                        firstChar = body.substring(0, 1);
+                        firstCharCode = body.charCodeAt(0);
+                        if (firstCharCode == 65279) {
+                            // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
+                            body = body.substring(1);
+                        }
+
                         earlierChat = JSON.parse(body);
 
                         if (earlierChat.allChats.length>0) {
@@ -234,6 +250,16 @@ io.on('connection', function(socket) {
 
 
         } else if (chatTypeID == 2) {
+
+            // var connectedIDPushData = {
+            //     groupID : friendUserID,
+            //     userID : myUserID
+            // };
+
+            // connectedUserID.push(connectedIDPushData);
+            // console.log(connectedUserID);
+
+            
 
             var friendOne = 1;
             var userOne = 1;
@@ -343,7 +369,14 @@ io.on('connection', function(socket) {
                         var firstChar = body.substring(0, 1);
                         var firstCharCode = body.charCodeAt(0);
                         if (firstCharCode == 65279) {
-                            // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
+                            console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
+                            body = body.substring(1);
+                        }
+
+                        firstChar = body.substring(0, 1);
+                        firstCharCode = body.charCodeAt(0);
+                        if (firstCharCode == 65279) {
+                            console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
                             body = body.substring(1);
                         }
 
@@ -372,6 +405,8 @@ io.on('connection', function(socket) {
                         io.to(socket.id).emit('INITIAL_DETAILS', initialDetailsObj);
                     });
 
+                    //calling api groupUsersOnlineOffline()
+                    groupUserOnlineOfflineStatus('1');
 
                 } );
 
@@ -382,6 +417,7 @@ io.on('connection', function(socket) {
 
     socket.on('SEND_MESSAGE_CLIENT', function(message) {
         // console.log('hitting SEND_MESSAGE_CLIENT');
+        console.log(privateChatConnectedUserID);
         console.log(Math.round(+new Date()/1000));
         if (socket.room !== undefined) {
             var date = moment.utc().format('YYYY-MM-DD HH:mm:ss');
@@ -444,6 +480,7 @@ io.on('connection', function(socket) {
                 duration: '',
 
             }
+            // console.log(io.sockets.adapter.rooms[socket.room]);
             io.to(socket.room).emit('FORWARD_MESSAGE_SERVER',forwardMessageServerData);
         }
 
@@ -479,28 +516,37 @@ io.on('connection', function(socket) {
                 message: message,
                 messageTypeID: 2,
                 chatTypeID: 1,
+                onlineUsersData: privateChatConnectedUserID,
 
             },
             json:false
 
         };
         request.post(options, function(error, response, body){
-            // console.log(body);
-            // console.log("----");
-            var firstChar = body.substring(0, 1);
-            var firstCharCode = body.charCodeAt(0);
-            if (firstCharCode == 65279) {
-                // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
-                body = body.substring(1);
-            }
+            // // console.log(body);
+            // // console.log("----");
+            // // console.log(response);
+            // var firstChar = body.substring(0, 1);
+            // var firstCharCode = body.charCodeAt(0);
+            // if (firstCharCode == 65279) {
+            //     // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
+            //     body = body.substring(1);
+            // }
 
-            var resp = JSON.parse(body);
-            // var resp = response.body;
-            // // console.log(resp);
-            var chatID = resp.chatID;
-            // console.log(chatID);
-            // callbackForwardMessageServer(message, local, chatID)
-            // response.body gives me access to the json data which i have entered
+            // firstChar = body.substring(0, 1);
+            // firstCharCode = body.charCodeAt(0);
+            // if (firstCharCode == 65279) {
+            //     // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
+            //     body = body.substring(1);
+            // }
+
+            // var resp = JSON.parse(body);
+            // // var resp = response.body;
+            // // // console.log(resp);
+            // var chatID = resp.chatID;
+            // // console.log(chatID);
+            // // callbackForwardMessageServer(message, local, chatID)
+            // // response.body gives me access to the json data which i have entered
         });
 
         // pool.getConnection(function(err, connection) {
@@ -544,22 +590,29 @@ io.on('connection', function(socket) {
 
         };
         request.post(options, function(error, response, body){
-            // console.log(body);
-            // console.log("----");
-            var firstChar = body.substring(0, 1);
-            var firstCharCode = body.charCodeAt(0);
-            if (firstCharCode == 65279) {
-                // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
-                body = body.substring(1);
-            }
+            // // console.log(body);
+            // // console.log("----");
+            // var firstChar = body.substring(0, 1);
+            // var firstCharCode = body.charCodeAt(0);
+            // if (firstCharCode == 65279) {
+            //     // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
+            //     body = body.substring(1);
+            // }
 
-            var resp = JSON.parse(body);
-            // var resp = response.body;
-            // // console.log(resp);
-            var chatID = resp.chatID;
-            // console.log(chatID);
-            // callbackForwardMessageServer(message, local, chatID)
-            // response.body gives me access to the json data which i have entered
+            // firstChar = body.substring(0, 1);
+            // firstCharCode = body.charCodeAt(0);
+            // if (firstCharCode == 65279) {
+            //     // console.log('First character "' + firstChar + '" (character code: ' + firstCharCode + ') is invalid so removing it.');
+            //     body = body.substring(1);
+            // }
+
+            // var resp = JSON.parse(body);
+            // // var resp = response.body;
+            // // // console.log(resp);
+            // var chatID = resp.chatID;
+            // // console.log(chatID);
+            // // callbackForwardMessageServer(message, local, chatID)
+            // // response.body gives me access to the json data which i have entered
         });
 
         // pool.getConnection(function(err, connection) {
@@ -584,6 +637,26 @@ io.on('connection', function(socket) {
         // // insertNotification();
     }
 
+    function groupUserOnlineOfflineStatus(onlineOfflineStatus) {
+        var options = {
+            url: rootUrl+'groupUserOnlineOfflineStatus',
+            headers: {
+                'accesstoken': socket.accessToken
+            },
+            form: {
+                userID: socket.userID,
+                groupID: socket.room,
+                onlineOfflineStatus: onlineOfflineStatus
+
+            },
+            json:false
+
+        };
+        request.post(options, function(error, response, body){
+            // response is not needed
+        });
+    }
+
     socket.on('FRIEND_TYPING',function() {
         if (socket.room !== undefined) {
             // console.log('friend typing');
@@ -591,8 +664,18 @@ io.on('connection', function(socket) {
         }
     });
 
-    socket.on('disconnect', function() {
-        //  //console.log('user disconnected');
+    socket.on('disconnect', function(data) {
+        console.log('user disconnected'+data);
+        if (socket.chatTypeID == 2) {
+            //calling api groupUsersOnlineOffline()
+            groupUserOnlineOfflineStatus('0');
+        }
+
+        // private chat disconnect 
+        if (socket.chatTypeID == 1) {
+            privateChatConnectedUserID.splice(privateChatConnectedUserID.indexOf(socket.userID), 1);
+        }
+        
     });
 });
 
